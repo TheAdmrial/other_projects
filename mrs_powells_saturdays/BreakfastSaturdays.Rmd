@@ -216,7 +216,7 @@ Looking at the breakfast row, the p-value (Pr(>|t|)) = 0.9855, which is greater 
 The second hypothesis, $\beta_3$, the p-value for TotalSumCases:Breakfast is less than 0.05. This means that we reject the null hypothesis and that there is sufficient evidence to show that the new breakfast menu has helped to increase revenue during the pandemic. In other words, the breakfast menu is a success in Mrs. Powell's in Rexburg!
 
 
-Another interesting observation is that once cases started to be recorded in EIPH, net sales on Saturdays without breakfast dropped almost $0.83 on average per Covid-19 case. On the contrary, for every case that was being taken care of in EIPH area net sales on Saturdays with breakfast increased on average by roughly 19 cents. 
+Another interesting observation is that once cases started to be recorded in Eastern Idaho Public Health (EIPH), net sales on Saturdays without breakfast dropped almost $0.83 on average per Covid-19 case. On the contrary, for every case that was being taken care of in EIPH area net sales on Saturdays with breakfast increased on average by roughly 19 cents. 
 
 Additionally, this 
 
