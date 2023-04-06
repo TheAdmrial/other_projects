@@ -1,0 +1,260 @@
+---
+title: "Mrs. Powell's Breakfast Saturdays"
+author: Adam Romriell
+output: 
+  html_document:
+    theme: cerulean
+    code_folding: hide
+---
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(mosaic)
+library(pander)
+library(DT)
+library(car)
+library(ggplot2)
+
+Bfast.Saturdays <- read.csv("../../Data/MrsPowellsSaturdaysRevenueNumbers.csv")
+Bfast.Saturdays0 <- filter(Bfast.Saturdays, NetSales != 0)
+Bfast.NetSales <- select(Bfast.Saturdays, Dates.OnlySaturdays.,NetSales, Breakfast, WeekNumber, TotalSumCases)
+
+Bfast.NetSales2 <- filter(Bfast.NetSales, !WeekNumber %in% c(48, 52))
+Bfast.difference <- filter(Bfast.NetSales2, WeekNumber %in% c(38, 39,40,41,42,43,44,45,46,47,49,50,51,53, 1,2,3,4,5,6,7,8))
+Bfast.difference0 <- filter(Bfast.difference, Breakfast == 0)
+Bfast.difference1 <- filter(Bfast.difference, Breakfast == 1)
+```
+
+### Background
+
+On September 19th, 2020, Mrs. Powell's in Rexburg started to provide a breakfast menu of biscuits and gravy and french toast made from our monkey bread. There have been people that have come in and rave about how good it is but are the words of a couple of people really indicative of the success of the new menu options? Are Saturdays with the new breakfast menu making more money than similar Saturdays at the same time as last year? 
+
+Another question arose while trying to answer this question; is it even fair to judge the Saturdays in 2020 and early 2021 to the 2019 and early 2020 Saturdays when there was a pandemic that may or may not have affected revenue numbers. The question then became: is the comparison between the two Saturdays a fair comparison to make?
+
+The following data table is all the data that was gathered to help answer these questions.
+
+## {.tabset .tabset-pills}
+
+### Summary
+
+In summary, the results that I have found in my anaylsis are as follows:
+
+1) There is no significant difference in the Saturdays of Sept. 21st, 2019 through Feb. 29th, 2020 and Sept. 19th, 2020 through Feb. 27, 2021. (see "Analysis Saturdays..." for further information)
+
+```{r}
+ggplot(Bfast.difference, aes(x=factor(Breakfast), y=NetSales))+
+  geom_boxplot(fill = "skyblue", color = "black")+
+  labs(title = "Net sales for Saturdays with and without the breakfast menu", y= "Net Sales ($)", x = "Breakfast present (0 = no, 1 = yes)")
+```
+
+```{r}
+Bfast.difference %>% 
+  group_by(Breakfast) %>% 
+  summarise(Minimum =min(NetSales),
+            Q1 = quantile(NetSales, 0.25),
+            Median = median(NetSales),
+            Q3 = quantile(NetSales, 0.75), 
+            Maximum = max(NetSales)) %>% 
+    pander()
+```
+
+2) While it is fair to compare the two groups of Saturdays despite the pandemic, the new breakfast menu has helped the Rexburg store to weather the storm! 
+
+To see the fair comparison, look at where the red and green lines start. Look at the incline in the green line and the drastic decrease in the red line. 
+
+```{r}
+Bfast.lm <- lm(NetSales ~ TotalSumCases + Breakfast + TotalSumCases:Breakfast, data = Bfast.NetSales2)
+
+b <- coef(Bfast.lm)
+
+plot(NetSales~TotalSumCases, data = Bfast.NetSales2, col = c("red" ,"green")[as.factor(Breakfast)], pch = 16)
+
+legend("topleft", legend=c("Baseline: no breakfast menu", "Changed-line: breakfast menu"), bty="n", lty=1, col=c("red","green3"), cex=0.8)
+
+
+curve(b[1] + b[2]*x, col="red", lwd=2, add=TRUE)  
+curve((b[1] + b[3]) + (b[2] + b[4])*x, col="green3", lwd=2, add=TRUE)
+```
+
+(see "... Covid-19 pandemic affected..." for further information and analysis)
+
+3) It may be helpful to see how things played out in real time. 
+
+The black line shows net sales for a particular Saturday. The red line show total Covid cases for that Saturday. The vertical blue line shows the start of the breakfast menu at Mrs. Powell's in Rexburg. The days where the store was not open and had no net sales were removed to show the continuity. 
+
+```{r}
+plot(NetSales ~ RunningWeek, data=Bfast.Saturdays0, type="l")
+lines(TotalSumCases ~ RunningWeek, data= Bfast.Saturdays0, col="red")
+abline(v= 90, lwd=2, col="skyblue")
+```
+
+
+
+### Data Table
+
+Breakfast is represented with a 0, no breakfast menu, and 1, breakfast menu present. Week number is the particular week in the year that the Saturday falls on. The plus reveals the total number of cases that Eastern Idaho Public Health (EIPH) had on record at the time. 
+
+For the tests that will be performed, 2 weeks were removed. One week was the Saturday following Thanksgiving. This is due to the bakery being closed on that particular day. The other week that was removed was the week of Christmas. In 2020, the Saturday following Christmas, Boxing Day, the bakery was also closed. In 2019, however, the bakery was open on the Saturday following Christmas. 
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+datatable(Bfast.NetSales, options=list(lengthMenu = c(5,10,30)), extensions="Responsive")
+```
+
+### Analysis Saturdays with and without breakfast (t-test)
+
+To test these questions, revenue data was gathered on the Saturdays in 2020 and 2021 that had the new breakfast menu. An analysis was done to look at the before, 2019 - early 2020, revenue and the after, 2020 - early 2021, revenue to see if there was a significant difference. 
+
+
+#### Hypothesis tests
+
+The hypothesis that I will use for the paired samples t-test will be:
+
+$$
+  H_0: \mu_d = 0
+$$
+$$
+  H_a: \mu_d \neq 0
+$$
+The significance level will be set at: 
+
+$$
+  \alpha = 0.05
+$$
+
+
+```{r, message=FALSE, warning=FALSE,}
+t.test(Bfast.difference1$NetSales, Bfast.difference0$NetSales, paired = TRUE, mu = 0 , alternative = "two.sided", conf.level = 0.95) %>% 
+  pander(caption = "Paired t-test")
+```
+Because the p-value is less than the significance level we fail to reject the null hypothesis. This means that there is insufficient evidence to suggest that breakfast has made a significant difference on net sales. 
+
+
+This plot shows if the data points are normal. If the points fall within the dotted blue lines, that means that the data is normal and a t-test is appropriate. It looks like 11, is outside the dotted blue lines which would suggest that particular data point may be an outlier. 
+```{r}
+qqPlot(Bfast.difference1$NetSales - Bfast.difference0$NetSales)
+```
+
+To be safe, a similar test will be run called the Wilcoxon Signed-Rank test. 
+
+```{r}
+wilcox.test(Bfast.difference1$NetSales, Bfast.difference0$NetSales, paired = TRUE, mu = 0 , alternative = "two.sided", conf.level = 0.95) %>% 
+  pander(caption = "Wilcoxon signed-rank test")
+```
+
+Again, the p-value is is greater than the significance level and we fail to rejcet the null hypothesis. This again means that there is insufficient evidence to suggest that there is a significant difference between 
+
+
+#### Analysis of the hypothesis tests
+
+```{r}
+ggplot(Bfast.difference, aes(x=factor(Breakfast), y=NetSales))+
+  geom_boxplot(fill = "skyblue", color = "black")+
+  labs(title = "Net sales for Saturdays with and without the breakfast menu", y= "Net Sales ($)", x = "Breakfast present (0 = no, 1 = yes)")
+```
+
+```{r}
+Bfast.difference %>% 
+  group_by(Breakfast) %>% 
+  summarise(Minimum =min(NetSales),
+            Q1 = quantile(NetSales, 0.25),
+            Median = median(NetSales),
+            Q3 = quantile(NetSales, 0.75), 
+            Maximum = max(NetSales)) %>% 
+    pander()
+```
+
+While the medians are different there is no statistical difference between the two groups of Saturdays. There also looks to be a bit more consistency in the breakfast group than the non-breakfast group.
+
+This then leads to the question previously posed; is the comparison between the two Saturdays a fair comparison to make? Has the Covid-19 pandemic affected net sales on Saturdays?
+
+### Has the Covid-19 pandemic affected sales on Saturdays? (Multi-linear Regression)
+
+This analysis will be used to find out if the comparison between the two groups of Saturdays is a fair comparison to make. This will be evaluated by looking at the difference in y-intercepts. If the y-intercepts are significantly different, then the comparison between the groups of Saturdays will be unfair. The other question that we will be testing is if the breakfast menu served on Saturdays has helped or hindered revenue on Saturdays. 
+
+The model that will be used for this linear regression is the following. 
+
+$$
+  \underbrace{Y_i}_\text{Net Sales (in dollars)} = \beta_0 + \beta_1 \underbrace{X_{1i}}_\text{Total Sum of Cases} + \beta_2\underbrace{X_{2i}}_\text{Breakfast or not(1 and 0)} +  \beta_3 \underbrace{X_{1i}X_{2i}}_\text{Total sum of cases:Breakfast} + \epsilon_i
+$$
+
+My hypothesis to test the fairness of the comparison will be:
+
+$$
+  H_0: \beta_2 = 0
+$$
+
+$$
+  H_a: \beta_2 \neq 0
+$$
+My hypothesis to test if breakfast helped revenue numbers during the pandemic is:
+
+$$
+  H_0: \beta_3 = 0
+$$
+
+$$
+  H_a: \beta_3 \neq 0
+$$
+
+
+We will establish the following significance level.
+
+$$
+  \alpha = 0.05
+$$
+
+
+```{r}
+Bfast.lm <- lm(NetSales ~ TotalSumCases + Breakfast + TotalSumCases:Breakfast, data = Bfast.NetSales2)
+summary(Bfast.lm) %>% 
+  pander()
+```
+
+Looking at the breakfast row, the p-value (Pr(>|t|)) = 0.9855, which is greater than our significance level. This means that we fail to reject the null hypothesis. This also means that there is insufficient evidence to show that the y-intercepts ($\beta_2$) are different when the total number of cases is zero. This goes to show that the comparison is fair to make even though there is no statistical differenct between the two sections of Saturdays. 
+
+The second hypothesis, $\beta_3$, the p-value for TotalSumCases:Breakfast is less than 0.05. This means that we reject the null hypothesis and that there is sufficient evidence to show that the new breakfast menu has helped to increase revenue during the pandemic. In other words, the breakfast menu is a success in Mrs. Powell's in Rexburg!
+
+
+Another interesting observation is that once cases started to be recorded in EIPH, net sales on Saturdays without breakfast dropped almost $0.83 on average per Covid-19 case. On the contrary, for every case that was being taken care of in EIPH area net sales on Saturdays with breakfast increased on average by roughly 19 cents. 
+
+Additionally, this 
+
+The following formula is the equation for the graph below. 
+
+$$
+ \overbrace{\hat{Y}_i}^\text{Net Sales(in dollars)} = 
+  \underbrace{(730.2 + -3.414)}_\text{Green y-int = 726.786} + \underbrace{(-0.8295 + 1.021)}_\text{Green slope = 0.1915} \overbrace {X_\text{1i}}^ \text{Total Sum of Cases}
+$$
+
+```{r}
+b <- coef(Bfast.lm)
+
+plot(NetSales~TotalSumCases, data = Bfast.NetSales2, col = c("red" ,"green")[as.factor(Breakfast)], pch = 16)
+
+legend("topleft", legend=c("Baseline: no breakfast menu", "Changed-line: breakfast menu"), bty="n", lty=1, col=c("red","green3"), cex=0.8)
+
+
+curve(b[1] + b[2]*x, col="red", lwd=2, add=TRUE)  
+curve((b[1] + b[3]) + (b[2] + b[4])*x, col="green3", lwd=2, add=TRUE)
+```
+
+This graph shows how initial sales were effected by the pandemic, in red. It also shows the slow increase in net sales towards the end of last year and the early part of this year. 
+
+
+#### Assumptions of a linear regression
+
+It is important to look at the assumptions for the linear regression. If the assumptions are met then there is credence for what was analyzed. If not then a linear regression is not appropriate.
+
+```{r}
+par(mfrow = c(1,3))
+plot(Bfast.lm,which = 1:2)
+plot(Bfast.lm$residuals)
+```
+
+First the graph on the right is to show that there is a linear relationship between net sales and total number of covid cases and if the variance in the points is constant. The linear test may be fulfilled but there is a spike in the middle of the data and then a decrease on both sides of the middle portion. No discernible pattern is desirable for the second assumption which there seems to be a pattern. This assumption then fails. 
+
+Next the graph in the middle. It is best to have the data line up as much as possible across the dotted line. This shows, again, that the data is normal. For the most part, the data line up on the line. For this graph, it passes the third assumption. 
+
+Finally, the graph on the right. This checks to see if the error terms, how far a data point is from it's corresponding line, are independent. It is best to have no clear pattern. This is clearly not the case. There is a sort of V shape to this graph. Therefore, this assumption is not met. 
+
+Despite the plots not meeting the assumptions for the linear regression, an expert statistician said, "that the stability of the green dots is what makes [it] okay to use the regression." He further stated, "there is a more in-depth analysis that you could do to make the full regression more meaningful, but it will end up giving similar conclusions."
